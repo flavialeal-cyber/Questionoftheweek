@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title_suffix %} — History{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+
+        <div class="card shadow border-0">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Past Polls</h5>
+            </div>
+            <div class="card-body p-4">
+                {% if questions %}
+                <div class="accordion" id="historyAccordion">
+                    {% for q in questions %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#q{{ q.id }}">
+                                <div class="d-flex w-100 justify-content-between align-items-center me-3">
+                                    <div>
+                                        <span class="text-muted small me-2">{{ q.week_label }}</span>
+                                        {{ q.title }}
+                                    </div>
+                                    <div>
+                                        {% if q.category %}
+                                        <span class="badge bg-secondary ms-2">{{ q.category }}</span>
+                                        {% endif %}
+                                        <span class="badge bg-primary ms-1">{{ q.total_votes }} votes</span>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="q{{ q.id }}" class="accordion-collapse collapse" data-bs-parent="#historyAccordion">
+                            <div class="accordion-body">
+                                {% set options = [
+                                    ('A', q.option_a, q.votes_a, q.pct('A')),
+                                    ('B', q.option_b, q.votes_b, q.pct('B')),
+                                    ('C', q.option_c, q.votes_c, q.pct('C')),
+                                    ('D', q.option_d, q.votes_d, q.pct('D'))
+                                ] %}
+                                {% for letter, text, votes, pct in options %}
+                                {% if text %}
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>
+                                            <span class="badge {{ 'bg-warning text-dark' if letter == q.winning_option else 'bg-secondary' }}">{{ letter }}</span>
+                                            {{ text }}
+                                            {% if letter == q.winning_option %}
+                                            <i class="bi bi-trophy-fill text-warning"></i>
+                                            {% endif %}
+                                        </span>
+                                        <span class="text-muted small">{{ votes }} ({{ pct }}%)</span>
+                                    </div>
+                                    <div class="progress" style="height: 16px;">
+                                        <div class="progress-bar {{ 'bg-warning' if letter == q.winning_option else 'bg-primary' }}"
+                                             style="width: {{ pct }}%;">
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                                <div class="text-muted small mt-3">
+                                    <i class="bi bi-people"></i> {{ q.total_votes }} total votes
+                                    {% if q.winning_option %}
+                                    &middot; Winner: <strong>{{ q.winning_option }})</strong>
+                                    {% elif q.total_votes > 0 %}
+                                    &middot; <strong>Tied!</strong>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Reactions summary -->
+                                {% set has_reactions = q.reaction_counts.values()|sum > 0 %}
+                                {% if has_reactions %}
+                                <div class="mt-2 pt-2 border-top">
+                                    <span class="text-muted small me-1">Reactions:</span>
+                                    {% for emoji in ['👏', '😂', '🤯', '🔥', '💡'] %}
+                                    {% if q.reaction_counts[emoji] > 0 %}
+                                    <span class="me-1">{{ emoji }} {{ q.reaction_counts[emoji] }}</span>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+
+                                <!-- Comments summary -->
+                                {% if q.comments %}
+                                <div class="mt-2 pt-2 border-top">
+                                    <h6 class="text-muted small mb-2">
+                                        <i class="bi bi-chat-dots"></i> {{ q.comments|length }} comment{{ 's' if q.comments|length != 1 else '' }}
+                                    </h6>
+                                    {% for c in q.comments[:5] %}
+                                    <div class="d-flex mb-1 ps-2 small">
+                                        <i class="bi bi-person-circle text-primary me-1"></i>
+                                        <strong class="me-1">{{ c.user_name or 'Anon' }}:</strong>
+                                        <span class="text-muted">{{ c.text[:100] }}{{ '...' if c.text|length > 100 else '' }}</span>
+                                    </div>
+                                    {% endfor %}
+                                    {% if q.comments|length > 5 %}
+                                    <div class="text-muted small ps-2">... and {{ q.comments|length - 5 }} more</div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="display-1 mb-3">📚</div>
+                    <h4 class="text-muted">No past polls yet</h4>
+                    <p class="text-muted">Poll results will appear here after each week.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

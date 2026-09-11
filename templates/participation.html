@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title_suffix %} — Participation{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+
+        <div class="card shadow border-0">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="mb-0"><i class="bi bi-people-fill"></i> Participation</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if participation %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-center" style="width: 60px;">#</th>
+                                <th>Name</th>
+                                <th class="text-center">Polls Voted</th>
+                                <th class="text-center">Streak</th>
+                                <th style="width: 180px;">Activity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in participation %}
+                            <tr class="{% if entry.email == user.email %}table-primary{% endif %}">
+                                <td class="text-center">
+                                    {% if entry.trophy %}
+                                        <span class="fs-4">{{ entry.trophy }}</span>
+                                    {% else %}
+                                        <span class="text-muted">{{ entry.rank }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ entry.name }}</strong>
+                                    {% if entry.email == user.email %}
+                                        <span class="badge bg-primary ms-1">You</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary fs-6">{{ entry.total_votes }}</span>
+                                </td>
+                                <td class="text-center">
+                                    {% if entry.streak > 0 %}
+                                    <span title="{{ entry.streak }}-week voting streak">
+                                        {{ entry.streak_fire }} <small class="text-muted">{{ entry.streak }}w</small>
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-primary"
+                                             role="progressbar"
+                                             style="width: {{ (entry.total_votes * 100 / participation[0].total_votes)|round }}%;"
+                                             aria-valuenow="{{ entry.total_votes }}"
+                                             aria-valuemin="0"
+                                             aria-valuemax="{{ participation[0].total_votes }}">
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="display-1 mb-3">🗳️</div>
+                    <h4 class="text-muted">No votes yet!</h4>
+                    <p class="text-muted">Vote on this week's question to be the first on the board.</p>
+                    <a href="{{ url_for('index') }}" class="btn btn-primary mt-2">
+                        <i class="bi bi-question-circle"></i> Go to This Week's Poll
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

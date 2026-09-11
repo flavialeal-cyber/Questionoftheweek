@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title_suffix %} — Admin{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+
+        <!-- Add New Question Form -->
+        <div class="card shadow border-0 mb-4">
+            <div class="card-header bg-success text-white py-3">
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Add New Question</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('admin_add_question') }}">
+                    <div class="mb-3">
+                        <label for="title" class="form-label fw-bold">Question <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-lg" id="title" name="title"
+                               placeholder="e.g. What do you prefer: tea or coffee?" required maxlength="500">
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="option_a" class="form-label">
+                                <span class="badge bg-primary me-1">A</span> Option A <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="option_a" name="option_a"
+                                   placeholder="e.g. Tea" required maxlength="200">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="option_b" class="form-label">
+                                <span class="badge bg-primary me-1">B</span> Option B <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="option_b" name="option_b"
+                                   placeholder="e.g. Coffee" required maxlength="200">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="option_c" class="form-label">
+                                <span class="badge bg-secondary me-1">C</span> Option C <small class="text-muted">(optional)</small>
+                            </label>
+                            <input type="text" class="form-control" id="option_c" name="option_c"
+                                   placeholder="e.g. Hot chocolate" maxlength="200">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="option_d" class="form-label">
+                                <span class="badge bg-secondary me-1">D</span> Option D <small class="text-muted">(optional)</small>
+                            </label>
+                            <input type="text" class="form-control" id="option_d" name="option_d"
+                                   placeholder="e.g. Water" maxlength="200">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="category" class="form-label">
+                                <i class="bi bi-tag"></i> Category <small class="text-muted">(optional)</small>
+                            </label>
+                            <input type="text" class="form-control" id="category" name="category"
+                                   placeholder="e.g. Food & Drink, Work Life, Fun" maxlength="50"
+                                   list="category-suggestions">
+                            <datalist id="category-suggestions">
+                                <option value="Food & Drink">
+                                <option value="Work Life">
+                                <option value="Fun">
+                                <option value="Technology">
+                                <option value="Culture">
+                                <option value="Hypothetical">
+                                <option value="Travel">
+                                <option value="Entertainment">
+                                <option value="Team Building">
+                            </datalist>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="week_start" class="form-label">
+                                <i class="bi bi-calendar-week"></i> Week Starting (Monday) <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="week_start" name="week_start"
+                                   value="{{ next_monday }}" required>
+                            <div class="form-text">Must be a Monday. Auto-adjusts if not.</div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-plus-circle"></i> Add Question
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Scheduled Questions Table -->
+        <div class="card shadow border-0">
+            <div class="card-header bg-primary text-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-list-check"></i> Scheduled Questions</h5>
+                    <span class="badge bg-light text-primary">{{ questions|length }} total</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if questions %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Week</th>
+                                <th>Question</th>
+                                <th>Options</th>
+                                <th>Category</th>
+                                <th class="text-center">Votes</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for q in questions %}
+                            <tr class="{{ 'table-warning' if not q.is_active else '' }}">
+                                <td class="small text-nowrap">
+                                    {{ q.week_start.strftime('%d %b %Y') }}
+                                </td>
+                                <td>
+                                    <strong>{{ q.title[:60] }}{{ '...' if q.title|length > 60 else '' }}</strong>
+                                </td>
+                                <td class="small">
+                                    {{ q.option_a[:15] }} / {{ q.option_b[:15] }}
+                                    {% if q.option_c %} / {{ q.option_c[:15] }}{% endif %}
+                                    {% if q.option_d %} / {{ q.option_d[:15] }}{% endif %}
+                                </td>
+                                <td>
+                                    {% if q.category %}
+                                    <span class="badge bg-secondary">{{ q.category }}</span>
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if q.total_votes > 0 %}
+                                    <span class="badge bg-primary">{{ q.total_votes }}</span>
+                                    {% else %}
+                                    <span class="text-muted">0</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if q.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center text-nowrap">
+                                    <form method="POST" action="{{ url_for('admin_toggle_question', question_id=q.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm {{ 'btn-outline-secondary' if q.is_active else 'btn-outline-success' }}"
+                                                title="{{ 'Deactivate' if q.is_active else 'Activate' }}">
+                                            <i class="bi {{ 'bi-pause-circle' if q.is_active else 'bi-play-circle' }}"></i>
+                                        </button>
+                                    </form>
+                                    {% if q.total_votes == 0 %}
+                                    <form method="POST" action="{{ url_for('admin_delete_question', question_id=q.id) }}" class="d-inline"
+                                          onsubmit="return confirm('Delete this question?')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="display-1 mb-3">📝</div>
+                    <h4 class="text-muted">No questions scheduled yet</h4>
+                    <p class="text-muted">Use the form above to add your first question!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- CSV Upload Tip -->
+        <div class="card border-0 bg-light mt-3">
+            <div class="card-body py-3 small text-muted">
+                <i class="bi bi-lightbulb text-warning"></i>
+                <strong>Tip:</strong> You can also bulk-load questions from a CSV file:
+                <code>python seed_db.py --csv questions.csv --start-date 2026-09-21</code>
+                — see <a href="https://github.com/your-repo" class="text-decoration-none">README</a> for format details.
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

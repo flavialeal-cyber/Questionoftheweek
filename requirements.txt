@@ -1,0 +1,5 @@
+# Question of the Day — Web App Dependencies
+Flask>=3.0.0
+Flask-SQLAlchemy>=3.1.0
+msal>=1.28.0
+waitress>=3.0.0

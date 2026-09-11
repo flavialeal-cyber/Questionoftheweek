@@ -1,0 +1,500 @@
+{% extends "base.html" %}
+{% block title_suffix %} — This Week's Poll{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+
+        <!-- Stats Banner -->
+        {% if stats and stats.total_votes > 0 %}
+        <div class="card border-0 bg-light mb-3 stats-banner">
+            <div class="card-body py-2 px-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-bar-chart-line text-primary"></i>
+                    <span class="text-muted small">
+                        You've voted in <strong>{{ stats.total_votes }}</strong> poll{{ 's' if stats.total_votes != 1 else '' }}
+                    </span>
+                </div>
+                <div>
+                    {% if stats.streak > 0 %}
+                    <span class="badge bg-warning text-dark">
+                        {{ stats.streak_fire }} {{ stats.streak }}-week streak!
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if message %}
+        <!-- No question this week -->
+        <div class="card shadow-sm border-0 text-center py-5">
+            <div class="card-body">
+                <div class="display-1 mb-3">📅</div>
+                <h3 class="text-muted">{{ message }}</h3>
+                <p class="text-muted mt-3">
+                    <a href="{{ url_for('history') }}" class="btn btn-outline-primary mt-2">
+                        <i class="bi bi-clock-history"></i> View Past Polls
+                    </a>
+                </p>
+            </div>
+        </div>
+
+        {% elif question and not existing_vote and poll_open %}
+        <!-- Poll Card (not yet voted, poll is OPEN) -->
+        <div class="card shadow border-0 question-card">
+            <div class="card-header bg-primary text-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-chat-square-dots-fill"></i> Question of the Week</h5>
+                    <span class="badge bg-light text-primary">
+                        {{ question.week_label }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                {% if question.category %}
+                <span class="badge bg-secondary mb-3">
+                    <i class="bi bi-tag"></i> {{ question.category }}
+                </span>
+                {% endif %}
+
+                <!-- Countdown -->
+                <div class="text-end mb-2">
+                    <small class="text-muted">
+                        <i class="bi bi-clock"></i> Poll closes: <span id="countdown" data-end="{{ countdown_end }}">Friday 5pm</span>
+                    </small>
+                </div>
+
+                <h4 class="mb-4 question-text">{{ question.title }}</h4>
+
+                <form method="POST" action="{{ url_for('vote') }}" id="voteForm">
+                    <input type="hidden" name="question_id" value="{{ question.id }}">
+                    <input type="hidden" name="selected_option" id="selectedOption" value="">
+
+                    <div class="d-grid gap-2">
+                        <button type="button" onclick="submitVote('A')"
+                                class="btn btn-outline-primary btn-lg text-start answer-btn">
+                            <span class="badge bg-primary me-2">A</span>
+                            {{ question.option_a }}
+                        </button>
+
+                        <button type="button" onclick="submitVote('B')"
+                                class="btn btn-outline-primary btn-lg text-start answer-btn">
+                            <span class="badge bg-primary me-2">B</span>
+                            {{ question.option_b }}
+                        </button>
+
+                        {% if question.option_c %}
+                        <button type="button" onclick="submitVote('C')"
+                                class="btn btn-outline-primary btn-lg text-start answer-btn">
+                            <span class="badge bg-primary me-2">C</span>
+                            {{ question.option_c }}
+                        </button>
+                        {% endif %}
+
+                        {% if question.option_d %}
+                        <button type="button" onclick="submitVote('D')"
+                                class="btn btn-outline-primary btn-lg text-start answer-btn">
+                            <span class="badge bg-primary me-2">D</span>
+                            {{ question.option_d }}
+                        </button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-muted text-center small py-2">
+                <i class="bi bi-shield-lock"></i> One vote per person. Your choice is recorded with your Microsoft account.
+            </div>
+        </div>
+
+        {% elif question and not existing_vote and not poll_open %}
+        <!-- Poll CLOSED — user never voted -->
+        <div class="card shadow border-0 results-card">
+            <div class="card-header bg-secondary text-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-lock-fill"></i> Poll Closed — Final Results</h5>
+                    <span class="badge bg-light text-secondary">
+                        {{ question.week_label }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                {% if question.category %}
+                <span class="badge bg-secondary mb-3">
+                    <i class="bi bi-tag"></i> {{ question.category }}
+                </span>
+                {% endif %}
+
+                <h4 class="mb-3 question-text">{{ question.title }}</h4>
+
+                <div class="alert alert-warning mb-3">
+                    <i class="bi bi-clock-history"></i> <strong>This poll has closed.</strong>
+                    You didn't vote this week. Come back next Monday! 📅
+                </div>
+
+                <!-- Vote count header -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 text-muted">
+                        <i class="bi bi-people-fill"></i> {{ question.total_votes }} vote{{ 's' if question.total_votes != 1 else '' }}
+                    </h6>
+                    {% if question.winning_option %}
+                    <span class="badge bg-warning text-dark">
+                        <i class="bi bi-trophy"></i> Winner: {{ question.winning_option }})
+                    </span>
+                    {% elif question.total_votes > 0 %}
+                    <span class="badge bg-secondary">
+                        <i class="bi bi-dash-circle"></i> It's a tie!
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Results bars (read-only) -->
+                {% set options = [
+                    ('A', question.option_a, question.votes_a, question.pct('A')),
+                    ('B', question.option_b, question.votes_b, question.pct('B')),
+                    ('C', question.option_c, question.votes_c, question.pct('C')),
+                    ('D', question.option_d, question.votes_d, question.pct('D'))
+                ] %}
+
+                {% for letter, text, votes, pct in options %}
+                {% if text %}
+                <div class="result-row mb-3 {% if letter == question.winning_option %}winning-option{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div>
+                            <span class="badge {{ 'bg-warning text-dark' if letter == question.winning_option else 'bg-secondary' }} me-1">{{ letter }}</span>
+                            <span class="{% if letter == question.winning_option %}fw-bold{% endif %}">
+                                {{ text }}
+                            </span>
+                            {% if letter == question.winning_option %}
+                                <i class="bi bi-trophy-fill text-warning ms-1"></i>
+                            {% endif %}
+                        </div>
+                        <span class="text-muted small">{{ votes }} ({{ pct }}%)</span>
+                    </div>
+                    <div class="progress" style="height: 24px;">
+                        <div class="progress-bar {{ 'bg-warning' if letter == question.winning_option else 'bg-secondary' }}"
+                             role="progressbar"
+                             style="width: {{ pct }}%;"
+                             aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">
+                            {{ pct }}%
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+
+                <!-- Emoji reaction counts (read-only, no buttons) -->
+                {% set has_reactions = question.reaction_counts.values()|sum > 0 %}
+                {% if has_reactions %}
+                <div class="mt-4 pt-3 border-top">
+                    <h6 class="text-muted mb-2"><i class="bi bi-emoji-smile"></i> Reactions</h6>
+                    <div class="d-flex gap-2 flex-wrap">
+                        {% for emoji in emoji_options %}
+                        {% if question.reaction_counts[emoji] > 0 %}
+                        <span class="btn btn-sm btn-outline-secondary disabled reaction-btn">
+                            <span class="fs-5">{{ emoji }}</span>
+                            <span class="badge bg-light text-dark ms-1">{{ question.reaction_counts[emoji] }}</span>
+                        </span>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer text-muted text-center small py-2">
+                <i class="bi bi-lock"></i> This poll closed on Friday at 5pm. Next poll starts Monday!
+            </div>
+        </div>
+
+        <!-- Comments (read-only, no form) -->
+        {% if question.comments %}
+        <div class="card shadow-sm border-0 mt-3">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0">
+                    <i class="bi bi-chat-dots"></i> Comments
+                    <span class="badge bg-secondary ms-1">{{ question.comments|length }}</span>
+                </h6>
+            </div>
+            <div class="card-body p-3">
+                <div class="comments-list">
+                    {% for c in question.comments %}
+                    <div class="d-flex mb-2 p-2 rounded {{ 'bg-light' if loop.index is odd else '' }}">
+                        <div class="me-2">
+                            <i class="bi bi-person-circle text-primary"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <strong class="small">{{ c.user_name or 'Anonymous' }}</strong>
+                                <small class="text-muted">{{ c.created_at.strftime('%a %H:%M') }}</small>
+                            </div>
+                            <p class="mb-0 small">{{ c.text }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% elif question and existing_vote %}
+        <!-- Results Card (already voted) -->
+        <div class="card shadow border-0 results-card">
+            <div class="card-header {{ 'bg-secondary' if not poll_open else 'bg-primary' }} text-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        {% if poll_open %}
+                        <i class="bi bi-bar-chart-fill"></i> Poll Results
+                        {% else %}
+                        <i class="bi bi-lock-fill"></i> Final Results
+                        {% endif %}
+                    </h5>
+                    <span class="badge bg-light {{ 'text-primary' if poll_open else 'text-secondary' }}">
+                        {{ question.week_label }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                {% if question.category %}
+                <span class="badge bg-secondary mb-3">
+                    <i class="bi bi-tag"></i> {{ question.category }}
+                </span>
+                {% endif %}
+
+                <h4 class="mb-3 question-text">{{ question.title }}</h4>
+
+                <!-- User's vote confirmation -->
+                <div class="alert {{ 'alert-info' if poll_open else 'alert-success' }} mb-3">
+                    {% if poll_open %}
+                    <i class="bi bi-check2-circle"></i> <strong>Thanks for voting!</strong> You picked
+                    <strong>{{ existing_vote.selected_option }})</strong>.
+                    {% else %}
+                    <i class="bi bi-check-circle-fill"></i> <strong>Poll closed!</strong> You voted
+                    <strong>{{ existing_vote.selected_option }})</strong>.
+                    {% if existing_vote.selected_option == question.winning_option %}
+                    Your pick won! 🎉
+                    {% endif %}
+                    {% endif %}
+                </div>
+
+                <!-- Countdown timer (only when open) -->
+                {% if poll_open %}
+                <div class="text-center mb-3">
+                    <span class="badge bg-dark fs-6 px-3 py-2">
+                        <i class="bi bi-clock"></i> Poll closes in: <span id="countdown" data-end="{{ countdown_end }}">calculating...</span>
+                    </span>
+                </div>
+                {% else %}
+                <div class="text-center mb-3">
+                    <span class="badge bg-secondary fs-6 px-3 py-2">
+                        <i class="bi bi-lock"></i> Poll closed — these are the final results
+                    </span>
+                </div>
+                {% endif %}
+
+                <!-- Vote count header -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 text-muted">
+                        <i class="bi bi-people-fill"></i> {{ question.total_votes }} vote{{ 's' if question.total_votes != 1 else '' }}
+                    </h6>
+                    {% if question.winning_option %}
+                    <span class="badge bg-warning text-dark">
+                        <i class="bi bi-trophy"></i> {{ 'Winner' if not poll_open else 'Leading' }}: {{ question.winning_option }})
+                    </span>
+                    {% elif question.total_votes > 0 %}
+                    <span class="badge bg-secondary">
+                        <i class="bi bi-dash-circle"></i> It's a tie!
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Results bars -->
+                {% set options = [
+                    ('A', question.option_a, question.votes_a, question.pct('A')),
+                    ('B', question.option_b, question.votes_b, question.pct('B')),
+                    ('C', question.option_c, question.votes_c, question.pct('C')),
+                    ('D', question.option_d, question.votes_d, question.pct('D'))
+                ] %}
+
+                {% for letter, text, votes, pct in options %}
+                {% if text %}
+                <div class="result-row mb-3 {% if letter == question.winning_option %}winning-option{% endif %} {% if letter == existing_vote.selected_option %}user-selected{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div>
+                            <span class="badge {{ 'bg-warning text-dark' if letter == question.winning_option else 'bg-secondary' }} me-1">{{ letter }}</span>
+                            <span class="{% if letter == question.winning_option %}fw-bold{% endif %}">
+                                {{ text }}
+                            </span>
+                            {% if letter == question.winning_option %}
+                                <i class="bi bi-trophy-fill text-warning ms-1"></i>
+                            {% endif %}
+                            {% if letter == existing_vote.selected_option %}
+                                <span class="badge bg-primary ms-1">Your pick</span>
+                            {% endif %}
+                        </div>
+                        <span class="text-muted small">{{ votes }} ({{ pct }}%)</span>
+                    </div>
+                    <div class="progress" style="height: 24px;">
+                        <div class="progress-bar {{ 'bg-warning' if letter == question.winning_option else 'bg-primary' }} {{ 'progress-bar-striped' if letter == existing_vote.selected_option else '' }}"
+                             role="progressbar"
+                             style="width: {{ pct }}%;"
+                             aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">
+                            {{ pct }}%
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+
+                <!-- Emoji Reactions -->
+                <div class="mt-4 pt-3 border-top">
+                    <h6 class="text-muted mb-2"><i class="bi bi-emoji-smile"></i> React to this poll</h6>
+                    <div class="d-flex gap-2 flex-wrap">
+                        {% for emoji in emoji_options %}
+                        {% if poll_open %}
+                        <form method="POST" action="{{ url_for('toggle_reaction') }}" class="d-inline">
+                            <input type="hidden" name="question_id" value="{{ question.id }}">
+                            <input type="hidden" name="emoji" value="{{ emoji }}">
+                            <button type="submit" class="btn btn-sm {{ 'btn-primary' if emoji in user_reactions else 'btn-outline-secondary' }} reaction-btn">
+                                <span class="fs-5">{{ emoji }}</span>
+                                {% if question.reaction_counts[emoji] > 0 %}
+                                <span class="badge bg-light text-dark ms-1">{{ question.reaction_counts[emoji] }}</span>
+                                {% endif %}
+                            </button>
+                        </form>
+                        {% else %}
+                        {# Poll closed: show reaction counts but no toggle #}
+                        {% if question.reaction_counts[emoji] > 0 %}
+                        <span class="btn btn-sm {{ 'btn-primary' if emoji in user_reactions else 'btn-outline-secondary' }} reaction-btn disabled">
+                            <span class="fs-5">{{ emoji }}</span>
+                            <span class="badge bg-light text-dark ms-1">{{ question.reaction_counts[emoji] }}</span>
+                        </span>
+                        {% endif %}
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </div>
+            <div class="card-footer text-muted text-center small py-2">
+                {% if poll_open %}
+                <i class="bi bi-arrow-repeat"></i> Results update as others vote. Poll closes Friday 5pm.
+                {% else %}
+                <i class="bi bi-lock"></i> This poll closed on Friday at 5pm. Next poll starts Monday!
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="card shadow-sm border-0 mt-3">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0">
+                    <i class="bi bi-chat-dots"></i> Comments
+                    <span class="badge bg-secondary ms-1">{{ question.comments|length }}</span>
+                </h6>
+            </div>
+            <div class="card-body p-3">
+                <!-- Add comment form (only when poll is open) -->
+                {% if poll_open %}
+                <form method="POST" action="{{ url_for('add_comment') }}" class="mb-3">
+                    <input type="hidden" name="question_id" value="{{ question.id }}">
+                    <div class="input-group">
+                        <input type="text" name="comment_text" class="form-control" 
+                               placeholder="Defend your pick... 💬" maxlength="500" required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i>
+                        </button>
+                    </div>
+                    <div class="form-text">Max 500 characters. Be nice! 😊</div>
+                </form>
+                {% else %}
+                <div class="alert alert-light text-center small mb-3">
+                    <i class="bi bi-lock"></i> Comments are closed for this poll.
+                </div>
+                {% endif %}
+
+                <!-- Comments list -->
+                {% if question.comments %}
+                <div class="comments-list">
+                    {% for c in question.comments %}
+                    <div class="d-flex mb-2 p-2 rounded {{ 'bg-light' if loop.index is odd else '' }}">
+                        <div class="me-2">
+                            <i class="bi bi-person-circle text-primary"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <strong class="small">{{ c.user_name or 'Anonymous' }}</strong>
+                                <small class="text-muted">{{ c.created_at.strftime('%a %H:%M') }}</small>
+                            </div>
+                            <p class="mb-0 small">{{ c.text }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center small mb-0">
+                    {% if poll_open %}
+                    No comments yet. Be the first! 🎤
+                    {% else %}
+                    No comments were left on this poll.
+                    {% endif %}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function submitVote(option) {
+    document.getElementById('selectedOption').value = option;
+    var form = document.getElementById('voteForm');
+    var buttons = form.querySelectorAll('button');
+    buttons.forEach(function(btn) {
+        btn.disabled = true;
+        btn.classList.add('disabled');
+    });
+    form.submit();
+}
+
+// Countdown timer
+function updateCountdown() {
+    var el = document.getElementById('countdown');
+    if (!el) return;
+    
+    var end = new Date(el.getAttribute('data-end'));
+    var now = new Date();
+    var diff = end - now;
+    
+    if (diff <= 0) {
+        el.textContent = 'Poll closed!';
+        // Reload page once to show closed state
+        if (!window._pollClosedReloaded) {
+            window._pollClosedReloaded = true;
+            setTimeout(function() { location.reload(); }, 2000);
+        }
+        return;
+    }
+    
+    var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    var secs = Math.floor((diff % (1000 * 60)) / 1000);
+    
+    var parts = [];
+    if (days > 0) parts.push(days + 'd');
+    if (hours > 0) parts.push(hours + 'h');
+    parts.push(mins + 'm');
+    parts.push(secs + 's');
+    
+    el.textContent = parts.join(' ');
+}
+
+// Update countdown every second
+updateCountdown();
+setInterval(updateCountdown, 1000);
+</script>
+{% endblock %}

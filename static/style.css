@@ -1,0 +1,206 @@
+/* Question of the Week — Custom Styles */
+
+body {
+    background-color: #f5f7fa;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Question Card */
+.question-card {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.question-text {
+    line-height: 1.5;
+    color: #1a1a2e;
+}
+
+/* Answer Buttons */
+.answer-btn {
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    border-width: 2px;
+}
+
+.answer-btn:hover {
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.answer-btn .badge {
+    font-size: 0.85rem;
+    min-width: 28px;
+}
+
+/* Results Card */
+.results-card {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.result-row {
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+.result-row.winning-option {
+    background-color: rgba(255, 193, 7, 0.08);
+    border-left: 3px solid #ffc107;
+}
+
+.result-row.user-selected:not(.winning-option) {
+    border-left: 3px solid #0d6efd;
+}
+
+.progress {
+    border-radius: 6px;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: width 0.6s ease;
+}
+
+/* Stats Banner */
+.stats-banner {
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+}
+
+/* Emoji Reactions */
+.reaction-btn {
+    border-radius: 20px;
+    padding: 4px 12px;
+    transition: all 0.15s ease;
+}
+
+.reaction-btn:hover {
+    transform: scale(1.1);
+}
+
+.reaction-btn.btn-primary {
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.3);
+}
+
+/* Comments */
+.comments-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.comments-list > div {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.comments-list > div:last-child {
+    border-bottom: none;
+}
+
+/* Countdown badge */
+.badge.bg-dark {
+    letter-spacing: 0.5px;
+}
+
+/* Participation / Table */
+.table th {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.table-primary {
+    background-color: rgba(13, 110, 253, 0.08) !important;
+}
+
+/* Accordion (History) */
+.accordion-button:not(.collapsed) {
+    background-color: rgba(13, 110, 253, 0.05);
+    color: #0d6efd;
+}
+
+.accordion-item {
+    border-radius: 8px !important;
+    margin-bottom: 4px;
+}
+
+/* Navbar */
+.navbar-brand {
+    font-size: 1.15rem;
+}
+
+.nav-link {
+    font-weight: 500;
+}
+
+/* Cards */
+.card {
+    border-radius: 12px;
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+}
+
+/* Alert styling */
+.alert {
+    border-radius: 8px;
+}
+
+/* Footer */
+footer {
+    font-size: 0.85rem;
+}
+
+/* Responsive tweaks */
+@media (max-width: 576px) {
+    .question-text {
+        font-size: 1.1rem;
+    }
+
+    .answer-btn {
+        font-size: 0.9rem;
+        padding: 10px 12px;
+    }
+
+    .card-header h5 {
+        font-size: 1rem;
+    }
+
+    .accordion-button {
+        font-size: 0.9rem;
+        padding: 10px 12px;
+    }
+
+    .reaction-btn {
+        padding: 3px 8px;
+    }
+}
+
+/* Animation for results bars */
+@keyframes growBar {
+    from { width: 0; }
+}
+
+.results-card .progress-bar {
+    animation: growBar 0.8s ease-out;
+}
