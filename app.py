@@ -274,8 +274,6 @@ def _build_msal_app():
 
 
 def get_current_user():
-    if not AUTH_ENABLED:
-        return {"name": "Dev User", "email": "dev.user@localhost"}
     return session.get("user")
 
 
@@ -326,18 +324,28 @@ def get_user_stats(user_email):
 # ---------------------------------------------------------------------------
 
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    if not AUTH_ENABLED:
-        session["user"] = {"name": "Dev User", "email": "dev.user@localhost"}
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        if not name or not email:
+            flash("Please enter both your name and email.", "warning")
+            return render_template("login.html")
+        session["user"] = {"name": name, "email": email}
+        flash(f"Welcome, {name}! 👋", "success")
         return redirect(url_for("index"))
 
-    msal_app = _build_msal_app()
-    auth_url = msal_app.get_authorization_request_url(
-        SCOPE,
-        redirect_uri=request.url_root.rstrip("/") + REDIRECT_PATH,
-    )
-    return redirect(auth_url)
+    # If Azure AD is configured, use that instead
+    if AUTH_ENABLED:
+        msal_app = _build_msal_app()
+        auth_url = msal_app.get_authorization_request_url(
+            SCOPE,
+            redirect_uri=request.url_root.rstrip("/") + REDIRECT_PATH,
+        )
+        return redirect(auth_url)
+
+    return render_template("login.html")
 
 
 @app.route(REDIRECT_PATH)
