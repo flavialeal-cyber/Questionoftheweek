@@ -76,6 +76,11 @@ SCOPE = ["User.Read"]
 
 AUTH_ENABLED = bool(AZURE_CLIENT_ID)
 
+# Admin emails — only these users can access /admin pages
+ADMIN_EMAILS = [
+    "flavia.leal@pwc.com",
+]
+
 # Available emoji reactions
 EMOJI_OPTIONS = ["👏", "😂", "🤯", "🔥", "💡"]
 
@@ -283,6 +288,19 @@ def login_required(f):
         user = get_current_user()
         if not user:
             return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        user = get_current_user()
+        if not user:
+            return redirect(url_for("login"))
+        if user["email"].lower() not in [e.lower() for e in ADMIN_EMAILS]:
+            flash("🔒 You don't have permission to access the admin area.", "warning")
+            return redirect(url_for("index"))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -630,7 +648,7 @@ def history():
 
 
 @app.route("/admin")
-@login_required
+@admin_required
 def admin():
     """Admin page to manage questions."""
     user = get_current_user()
@@ -653,7 +671,7 @@ def admin():
 
 
 @app.route("/admin/add", methods=["POST"])
-@login_required
+@admin_required
 def admin_add_question():
     """Add a new question from the admin form."""
     title = request.form.get("title", "").strip()
@@ -708,7 +726,7 @@ def admin_add_question():
 
 
 @app.route("/admin/edit/<int:question_id>", methods=["GET", "POST"])
-@login_required
+@admin_required
 def admin_edit_question(question_id):
     """Edit an existing question."""
     question = db.session.get(Question, question_id)
@@ -772,7 +790,7 @@ def admin_edit_question(question_id):
 
 
 @app.route("/admin/delete/<int:question_id>", methods=["POST"])
-@login_required
+@admin_required
 def admin_delete_question(question_id):
     """Delete a question (only if it has no votes)."""
     question = db.session.get(Question, question_id)
@@ -791,7 +809,7 @@ def admin_delete_question(question_id):
 
 
 @app.route("/admin/toggle/<int:question_id>", methods=["POST"])
-@login_required
+@admin_required
 def admin_toggle_question(question_id):
     """Toggle a question's active status."""
     question = db.session.get(Question, question_id)
@@ -803,6 +821,18 @@ def admin_toggle_question(question_id):
     db.session.commit()
     status = "activated" if question.is_active else "deactivated"
     flash(f"Question {status}.", "success")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/reset-votes", methods=["POST"])
+@admin_required
+def admin_reset_votes():
+    """Clear all votes, comments, and reactions (fresh start)."""
+    Reaction.query.delete()
+    Comment.query.delete()
+    Response.query.delete()
+    db.session.commit()
+    flash("🧹 All votes, comments, and reactions have been cleared!", "success")
     return redirect(url_for("admin"))
 
 
@@ -865,6 +895,15 @@ def api_vote():
 def init_db():
     with app.app_context():
         db.create_all()
+
+
+# Make is_admin available in all templates
+@app.context_processor
+def inject_is_admin():
+    user = get_current_user()
+    if user:
+        return {"is_admin": user["email"].lower() in [e.lower() for e in ADMIN_EMAILS]}
+    return {"is_admin": False}
 
 
 # Always initialise the database (needed for gunicorn/production)

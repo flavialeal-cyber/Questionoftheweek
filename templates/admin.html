@@ -275,6 +275,22 @@
         </div>
     </div>
 </div>
+
+<!-- Reset All Votes -->
+<div class="card shadow border-0 mb-4 border-danger">
+    <div class="card-header bg-danger text-white py-3">
+        <h5 class="mb-0"><i class="bi bi-arrow-counterclockwise"></i> Reset All Votes</h5>
+    </div>
+    <div class="card-body p-4">
+        <p class="text-muted mb-3">Clear all votes, comments, and reactions for a fresh start. Questions will remain — only votes are removed.</p>
+        <form method="POST" action="{{ url_for('admin_reset_votes') }}" onsubmit="return confirm('⚠️ Are you sure? This will delete ALL votes, comments, and reactions. This cannot be undone!');">
+            <button type="submit" class="btn btn-outline-danger">
+                <i class="bi bi-trash3"></i> Reset All Votes
+            </button>
+        </form>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
