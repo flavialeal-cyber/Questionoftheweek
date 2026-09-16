@@ -93,7 +93,7 @@ def main():
     parser = argparse.ArgumentParser(description="Seed the Question of the Week database from CSV")
     parser.add_argument(
         "--csv",
-        default=os.path.join(os.path.dirname(__file__), "..", "sample_questions.csv"),
+        default=os.path.join(os.path.dirname(__file__), "sample_questions.csv"),
         help="Path to CSV file (default: ../sample_questions.csv)",
     )
     parser.add_argument(

@@ -859,8 +859,11 @@ def init_db():
         db.create_all()
 
 
+# Always initialise the database (needed for gunicorn/production)
+init_db()
+
+
 if __name__ == "__main__":
-    init_db()
     port = int(os.environ.get("PORT", 8000))
     debug = os.environ.get("FLASK_DEBUG", "1") == "1"
     print(f"\n🗳️  Question of the Week — Web App")

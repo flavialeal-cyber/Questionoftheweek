@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: question-of-the-week
+    runtime: python
+    buildCommand: bash build.sh
+    startCommand: gunicorn app:app
+    envVars:
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: "3.11.0"
