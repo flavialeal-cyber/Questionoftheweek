@@ -699,6 +699,70 @@ def admin_add_question():
     return redirect(url_for("admin"))
 
 
+@app.route("/admin/edit/<int:question_id>", methods=["GET", "POST"])
+@login_required
+def admin_edit_question(question_id):
+    """Edit an existing question."""
+    question = db.session.get(Question, question_id)
+    if not question:
+        flash("Question not found.", "error")
+        return redirect(url_for("admin"))
+
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        option_a = request.form.get("option_a", "").strip()
+        option_b = request.form.get("option_b", "").strip()
+        option_c = request.form.get("option_c", "").strip() or None
+        option_d = request.form.get("option_d", "").strip() or None
+        category = request.form.get("category", "").strip() or None
+        week_start_str = request.form.get("week_start", "").strip()
+
+        if not title or not option_a or not option_b:
+            flash("Question, Option A, and Option B are required.", "error")
+            return redirect(url_for("admin"))
+
+        if week_start_str:
+            try:
+                new_week_start = date.fromisoformat(week_start_str)
+                # Ensure it's a Monday
+                if new_week_start.weekday() != 0:
+                    new_week_start = new_week_start - timedelta(days=new_week_start.weekday())
+                # Check for duplicate week (excluding this question)
+                existing = Question.query.filter(
+                    Question.week_start == new_week_start,
+                    Question.id != question_id
+                ).first()
+                if existing:
+                    flash(f"Another question is already scheduled for the week of {new_week_start.isoformat()}.", "error")
+                    return redirect(url_for("admin"))
+                question.week_start = new_week_start
+            except ValueError:
+                flash("Invalid date format.", "error")
+                return redirect(url_for("admin"))
+
+        question.title = title
+        question.option_a = option_a
+        question.option_b = option_b
+        question.option_c = option_c
+        question.option_d = option_d
+        question.category = category
+        db.session.commit()
+        flash(f"✏️ Question updated successfully!", "success")
+        return redirect(url_for("admin"))
+
+    # GET — return question data as JSON for the modal
+    return jsonify({
+        "id": question.id,
+        "title": question.title,
+        "option_a": question.option_a,
+        "option_b": question.option_b,
+        "option_c": question.option_c or "",
+        "option_d": question.option_d or "",
+        "category": question.category or "",
+        "week_start": question.week_start.isoformat(),
+    })
+
+
 @app.route("/admin/delete/<int:question_id>", methods=["POST"])
 @login_required
 def admin_delete_question(question_id):
